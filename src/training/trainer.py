@@ -22,7 +22,11 @@ class CAMETrainer:
             self.config = yaml.safe_load(f)
         self.config["training"]["learning_rate"] = float(self.config["training"]["learning_rate"])
 
-        print(f"✅ Config loaded | LR = {self.config['training']['learning_rate']}")
+        # === HARDWARE-FRIENDLY SETTINGS ===
+        self.config["training"]["batch_size"] = 1  # reduced for MPS
+        self.gradient_accumulation_steps = 8  # effective batch = 8
+
+        print(f"✅ Config loaded | LR = {self.config['training']['learning_rate']} | Batch=1 (accum=8)")
 
         self.model = CAMEModel(model_name=self.config["model"]["name"])
 
@@ -57,18 +61,13 @@ class CAMETrainer:
     def train_epoch(self, epoch: int):
         self.model.train()
         total_loss = 0
+        accum_loss = 0
 
         mask_stage = min(1 + (epoch // 2), 5)
         self.train_dataset.set_curriculum_stage(mask_stage)
 
         progress = tqdm(self.train_loader, desc=f"Epoch {epoch + 1} [Train]")
         for batch_idx, batch in enumerate(progress):
-            if batch_idx == 0:
-                print(
-                    f"   Debug shapes - soft_probs: {batch['soft_probs'].shape} | confidence: {batch['confidence'].shape} | h_text expected: (batch, seq, 768)")
-
-            self.optimizer.zero_grad()
-
             outputs = self.model(
                 input_ids=batch["input_ids"],
                 attention_mask=batch["attention_mask"],
@@ -82,20 +81,23 @@ class CAMETrainer:
                 batch["labels"].view(-1),
                 ignore_index=self.model.tokenizer.pad_token_id
             )
-
-            loss_syll = torch.tensor(0.0, device=self.accelerator.device)
-            loss_conf = torch.nn.functional.mse_loss(
+            loss = loss_rest + 0.2 * torch.nn.functional.mse_loss(
                 outputs["confidence_score"].squeeze(-1),
                 batch["confidence"].squeeze(-1)
             )
 
-            loss = loss_rest + 0.3 * loss_syll + 0.2 * loss_conf
-
+            loss = loss / self.gradient_accumulation_steps
             self.accelerator.backward(loss)
-            self.optimizer.step()
+            accum_loss += loss.item() * self.gradient_accumulation_steps
 
-            total_loss += loss.item()
-            progress.set_postfix({"loss": f"{loss.item():.4f}"})
+            if (batch_idx + 1) % self.gradient_accumulation_steps == 0:
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+                total_loss += accum_loss
+                accum_loss = 0
+                progress.set_postfix(
+                    {"loss": f"{total_loss / ((batch_idx + 1) // self.gradient_accumulation_steps + 1):.4f}"})
+
             self.global_step += 1
 
         avg_loss = total_loss / len(self.train_loader)
