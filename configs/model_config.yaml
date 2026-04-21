@@ -1,0 +1,22 @@
+model:
+  name: "google/byt5-small"
+  hidden_dim: 768
+  max_length: 512
+  vocab_size: 384   # ByT5-small vocab (do not change)
+
+training:
+  batch_size: 8
+  epochs: 8
+  learning_rate: 5e-5
+  weight_decay: 0.01
+  warmup_steps: 500
+  curriculum_start_masks: 1
+  curriculum_end_masks: 5
+
+fusion:
+  vis_vocab_size: 384   # same as tokenizer
+
+beam_search:
+  beam_size: 8
+  lambda_valid: 0.4     # weight for syllable validity
+  mu_confidence: 0.2    # weight for confidence head
