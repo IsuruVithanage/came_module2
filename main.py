@@ -19,7 +19,7 @@ else:
 # Example restoration (replace with real Vision output later)
 restorer = BeamSearchRestorer(checkpoint_path=str(checkpoint) if checkpoint.exists() else None)
 
-noisy_example = "𑀛𑁄𑀢𑀺𑀰<MASK>𑀦𑀢𑁂𑀭𑀰𑀅<MASK>𑀺𑀯𑀰𑀺𑀓𑀩𑀢𑀰𑀼𑀫𑀦𑀤𑀢𑀢𑁂𑀭𑀰𑀮𑁂𑀦𑁂𑀰𑀕𑀰"
+noisy_example = "𑀛𑁄𑀢𑀺𑀰_𑀦𑀢𑁂𑀭𑀰𑀅_𑀺𑀯𑀰𑀺𑀓𑀩𑀢𑀰𑀼𑀫𑀦𑀤𑀢𑀢𑁂𑀭𑀰𑀮𑁂𑀦𑁂𑀰𑀕𑀰"
 
 print(f"\n🔥 Testing restoration on noisy input:")
 print(f"   Noisy Brahmi : {noisy_example}")

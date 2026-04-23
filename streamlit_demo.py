@@ -32,8 +32,8 @@ st.sidebar.header("Demo Controls")
 example = st.sidebar.selectbox(
     "Choose example inscription",
     [
-        "𑀛𑁄𑀢𑀺𑀰<MASK>𑀦𑀢𑁂𑀭𑀰𑀅<MASK>𑀺𑀯𑀰𑀺𑀓𑀩𑀢𑀰𑀼𑀫𑀦𑀤𑀢𑀢𑁂𑀭𑀰𑀮𑁂𑀦𑁂𑀰𑀕𑀰",
-        "𑀫𑀳𑀭𑀸𑀚𑀧𑀼<MASK>𑀳",
+        "𑀛𑁄𑀢𑀺𑀰_𑀦𑀢𑁂𑀭𑀰𑀅_𑀺𑀯𑀰𑀺𑀓𑀩𑀢𑀰𑀼𑀫𑀦𑀤𑀢𑀢𑁂𑀭𑀰𑀮𑁂𑀦𑁂𑀰𑀕𑀰",
+        "𑀫𑀳𑀭𑀸𑀚𑀧𑀼_𑀳",
         "𑀢𑀺𑀰𑀰𑀫𑀡𑀺𑀬𑀮𑁂𑀦𑁂𑀰𑀕𑀰",
         "Custom"
     ]
@@ -41,7 +41,7 @@ example = st.sidebar.selectbox(
 
 if example == "Custom":
     noisy_input = st.text_area("Paste noisy Brahmi text (use <MASK> for missing characters)",
-                               value="𑀛𑁄𑀢𑀺𑀰<MASK>𑀦𑀢𑁂𑀭𑀰𑀅<MASK>𑀺𑀯𑀰𑀺𑀓𑀩𑀢𑀰𑀼𑀫𑀦𑀤𑀢𑀢𑁂𑀭𑀰𑀮𑁂𑀦𑁂𑀰𑀕𑀰",
+                               value="𑀛𑀛𑁄𑀢𑀺𑀰_𑀦𑀢𑁂𑀭𑀰𑀅_𑀺𑀯𑀰𑀺𑀓𑀩𑀢𑀰𑀼𑀫𑀦𑀤𑀢𑀢𑁂𑀭𑀰𑀮𑁂𑀦𑁂𑀰𑀕𑀰",
                                height=100)
 else:
     noisy_input = st.text_area("Noisy Brahmi text", value=example, height=100)
@@ -50,17 +50,16 @@ if st.button("🚀 Restore Missing Characters", type="primary"):
     with st.spinner("Running gated fusion + position-wise beam search..."):
         results = restorer.restore(noisy_input)
 
-    st.success("✅ Restoration complete!")
-
-    # Display results
     st.subheader("📊 Ranked Restoration Results")
-    for rank, (iast, conf) in enumerate(results[:5], 1):
-        st.metric(
-            label=f"Rank {rank}",
-            value=iast,
-            delta=f"{conf:.4f} confidence"
-        )
 
+    # UNPACK ALL 3 VARIABLES (brahmi, iast, conf)
+    for rank, (brahmi, iast, conf) in enumerate(results[:5], 1):
+        st.metric(
+            label=f"Rank {rank} (Confidence: {conf:.4f})",
+            value=brahmi,
+            delta=iast,
+            delta_color="off"  # Keeps the IAST text gray instead of green/red
+        )
     st.divider()
     st.caption("Powered by CAME: Gated Fusion • ByT5 • Syllable Validity • Constrained Beam Search")
 

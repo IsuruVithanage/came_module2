@@ -8,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.models.came_model import CAMEModel
 
-
 class BrahmiRestorationDataset(Dataset):
     def __init__(self, split: str = "train", max_length: int = 512):
         self.split = split
@@ -16,7 +15,7 @@ class BrahmiRestorationDataset(Dataset):
 
         model_for_tokenizer = CAMEModel()
         self.tokenizer = model_for_tokenizer.tokenizer
-        self.vocab_size = self.tokenizer.vocab_size
+        self.vocab_size = model_for_tokenizer.vocab_size
 
         txt_path = Path(f"data/processed/{split}.txt")
         with open(txt_path, "r", encoding="utf-8") as f:
@@ -38,7 +37,7 @@ class BrahmiRestorationDataset(Dataset):
         noisy = list(clean)
         mask_positions = random.sample(range(len(noisy)), k=min(self.current_mask_count, len(noisy)))
         for pos in mask_positions:
-            noisy[pos] = "<mask>"
+            noisy[pos] = "_"  # Native 1-byte masking
 
         noisy_text = "".join(noisy)
 
@@ -47,7 +46,6 @@ class BrahmiRestorationDataset(Dataset):
         targets = self.tokenizer(clean, padding="max_length", truncation=True,
                                  max_length=self.max_length, return_tensors="pt")
 
-        # === CORRECT SHAPE: (seq_len, ...) - DataLoader will add batch dim automatically ===
         soft_probs = torch.zeros((self.max_length, self.vocab_size))
         confidence = torch.ones((self.max_length, 1)) * 0.8
 

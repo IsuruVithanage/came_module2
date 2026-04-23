@@ -114,7 +114,7 @@ class CAMETrainer:
 
 if __name__ == "__main__":
     trainer = CAMETrainer()
-    for epoch in range(20):  # continue training
+    for epoch in range(50):  # continue training
         trainer.train_epoch(epoch)
         if epoch % 5 == 0:
             trainer.save_checkpoint()

@@ -3,6 +3,17 @@ import torch.nn as nn
 from transformers import T5ForConditionalGeneration, ByT5Tokenizer
 from .gated_fusion import GatedFusion
 
+# All Brahmi characters we want as single tokens
+BRAHMI_TOKENS = [
+    "_",   # Native 1-byte masking token
+    '𑀓','𑀔','𑀕','𑀖','𑀗','𑀘','𑀙','𑀚','𑀛','𑀜','𑀝','𑀞','𑀟','𑀠','𑀡',
+    '𑀢','𑀣','𑀤','𑀥','𑀦','𑀧','𑀨','𑀩','𑀪','𑀫','𑀬','𑀭','𑀮','𑀯',
+    '𑀰','𑀱','𑀲','𑀳','𑀴','𑀵','𑀶','𑀷',
+    '𑀸','𑀹','𑀺','𑀻','𑀼','𑀽','𑀾','𑀿','𑁀','𑁁','𑁂','𑁃','𑁄','𑁅',
+    '𑀅','𑀆','𑀇','𑀈','𑀉','𑀊','𑀋','𑀌','𑀍','𑀎','𑀏','𑀐','𑀑','𑀒',
+    '𑀀','𑀁','𑀂',
+    '\U00011046',
+]
 
 class CAMEModel(nn.Module):
     def __init__(self, model_name: str = "google/byt5-small"):
@@ -10,16 +21,19 @@ class CAMEModel(nn.Module):
         self.byt5 = T5ForConditionalGeneration.from_pretrained(model_name)
         self.tokenizer = ByT5Tokenizer.from_pretrained(model_name)
 
-        # === DYNAMIC HIDDEN DIM FROM BYT5 ===
-        self.hidden_dim = self.byt5.config.d_model  # 512 for byt5-small
+        # Force tokenizer to recognize Brahmi as single tokens
+        num_added = self.tokenizer.add_tokens(BRAHMI_TOKENS)
+        self.byt5.resize_token_embeddings(len(self.tokenizer))
+
+        self.hidden_dim = self.byt5.config.d_model
+        self.vocab_size = len(self.tokenizer)
 
         self.fusion = GatedFusion(
             hidden_dim=self.hidden_dim,
-            vis_vocab_size=self.tokenizer.vocab_size
+            vis_vocab_size=self.vocab_size
         )
 
-        # Multitask heads
-        self.restoration_head = nn.Linear(self.hidden_dim, self.tokenizer.vocab_size)
+        self.restoration_head = nn.Linear(self.hidden_dim, self.vocab_size)
         self.syllable_head = nn.Linear(self.hidden_dim, 2)
         self.confidence_head = nn.Linear(self.hidden_dim, 1)
 
@@ -32,8 +46,22 @@ class CAMEModel(nn.Module):
         else:
             h_fused = h_text
 
+        # === FIXED: Provide decoder_input_ids for inference ===
+            # === FIXED: Allow full-sequence decoding if labels are provided (even in eval mode) ===
+        if labels is not None:
+            decoder_input_ids = self.byt5._shift_right(labels)
+        else:
+            # During standard generation without labels, use the pad token
+            batch_size = input_ids.shape[0]
+            decoder_input_ids = torch.full(
+                (batch_size, 1),
+                self.byt5.config.pad_token_id,
+                dtype=torch.long,
+                device=input_ids.device
+            )
+
         decoder_outputs = self.byt5.decoder(
-            input_ids=labels if self.training and labels is not None else None,
+            input_ids=decoder_input_ids,
             encoder_hidden_states=h_fused,
             encoder_attention_mask=attention_mask
         )
