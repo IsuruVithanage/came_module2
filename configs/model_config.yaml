@@ -6,8 +6,8 @@ model:
 
 training:
   batch_size: 8
-  epochs: 8
-  learning_rate: 5e-5
+  epochs: 50
+  learning_rate: 5e-4   # ← INCREASE THIS (was 5e-5)
   weight_decay: 0.01
   warmup_steps: 500
   curriculum_start_masks: 1

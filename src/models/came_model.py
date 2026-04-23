@@ -2,18 +2,21 @@ import torch
 import torch.nn as nn
 from transformers import T5ForConditionalGeneration, ByT5Tokenizer
 from .gated_fusion import GatedFusion
+from ..utils.build_syllable_vocab import get_safe_syllable_tokens
 
-# All Brahmi characters we want as single tokens
-BRAHMI_TOKENS = [
-    "_",   # Native 1-byte masking token
-    '𑀓','𑀔','𑀕','𑀖','𑀗','𑀘','𑀙','𑀚','𑀛','𑀜','𑀝','𑀞','𑀟','𑀠','𑀡',
-    '𑀢','𑀣','𑀤','𑀥','𑀦','𑀧','𑀨','𑀩','𑀪','𑀫','𑀬','𑀭','𑀮','𑀯',
-    '𑀰','𑀱','𑀲','𑀳','𑀴','𑀵','𑀶','𑀷',
-    '𑀸','𑀹','𑀺','𑀻','𑀼','𑀽','𑀾','𑀿','𑁀','𑁁','𑁂','𑁃','𑁄','𑁅',
-    '𑀅','𑀆','𑀇','𑀈','𑀉','𑀊','𑀋','𑀌','𑀍','𑀎','𑀏','𑀐','𑀑','𑀒',
-    '𑀀','𑀁','𑀂',
-    '\U00011046',
+# 1. Define the base single characters explicitly
+BASE_BRAHMI_CHARS = [
+    "_",  # mask token
+    "𑀓", "𑀔", "𑀕", "𑀖", "𑀗", "𑀘", "𑀙", "𑀚", "𑀛", "𑀜",
+    "𑀝", "𑀞", "𑀟", "𑀠", "𑀡", "𑀢", "𑀣", "𑀤", "𑀥", "𑀦",
+    "𑀧", "𑀨", "𑀩", "𑀪", "𑀫", "𑀬", "𑀭", "𑀮", "𑀯", "𑀰",
+    "𑀱", "𑀲", "𑀳", "𑀴", "𑀵", "𑀶", "𑀷",
+    "𑀅", "𑀆", "𑀇", "𑀈", "𑀉", "𑀊", "𑀋", "𑀌", "𑀍", "𑀎", "𑀏", "𑀐", "𑀑", "𑀒",
+    "𑀸", "𑀹", "𑀺", "𑀻", "𑀼", "𑀽", "𑀾", "𑀿", "𑁀", "𑁁", "𑁂", "𑁃", "𑁄", "𑁅", "\U00011046"
 ]
+
+# 2. Combine base chars with dynamic composite syllables
+BRAHMI_TOKENS = BASE_BRAHMI_CHARS + get_safe_syllable_tokens(min_count=5)
 
 class CAMEModel(nn.Module):
     def __init__(self, model_name: str = "google/byt5-small"):
