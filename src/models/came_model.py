@@ -12,9 +12,8 @@ BASE_BRAHMI_CHARS = [
     "𑀧", "𑀨", "𑀩", "𑀪", "𑀫", "𑀬", "𑀭", "𑀮", "𑀯", "𑀰",
     "𑀱", "𑀲", "𑀳", "𑀴", "𑀵", "𑀶", "𑀷",
     "𑀅", "𑀆", "𑀇", "𑀈", "𑀉", "𑀊", "𑀋", "𑀌", "𑀍", "𑀎", "𑀏", "𑀐", "𑀑", "𑀒",
-    "𑀸", "𑀹", "𑀺", "𑀻", "𑀼", "𑀽", "𑀾", "𑀿", "𑁀", "𑁁", "𑁂", "𑁃", "𑁄", "𑁅", "\U00011046"
+    "𑀸", "𑀺", "𑀼", "𑁂", "𑁄", "\U00011046"  # <--- Only your 5 vowels and the Virama!
 ]
-
 # 2. Combine base chars with dynamic composite syllables
 BRAHMI_TOKENS = BASE_BRAHMI_CHARS + get_safe_syllable_tokens(min_count=5)
 

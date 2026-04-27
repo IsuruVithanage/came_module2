@@ -202,7 +202,9 @@ class CAMETrainer:
         mask_stage = min(1 + (epoch // 2), 5)
         self.train_dataset.set_curriculum_stage(mask_stage)
 
-        progress = tqdm(self.train_loader, desc=f"Epoch {epoch + 1} [Train]")
+        # mininterval=2.0: Only updates the browser screen every 2 seconds
+        # leave=False: Deletes the progress bar when the epoch finishes to keep the console clean
+        progress = tqdm(self.train_loader, desc=f"Epoch {epoch + 1} [Train]", mininterval=2.0, leave=False)
 
         for batch_idx, batch in enumerate(progress):
 
@@ -288,9 +290,21 @@ class CAMETrainer:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    # 1. Set up the listener for the epoch argument
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epochs", type=int, default=50, help="Number of epochs to train")
+    args = parser.parse_args()
+
     trainer = CAMETrainer()
-    for epoch in range(50):
+
+    # 2. Use the dynamic argument instead of the hardcoded 50
+    for epoch in range(args.epochs):
         trainer.train_epoch(epoch)
         if epoch % 5 == 0:
             trainer.save_checkpoint()
-    print("🎉 Training finished!")
+
+    # Save one final time when the loop finishes!
+    trainer.save_checkpoint()
+    print(f"🎉 Training finished after {args.epochs} epochs!")
