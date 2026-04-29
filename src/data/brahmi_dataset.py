@@ -253,15 +253,11 @@ class BrahmiRestorationDataset(Dataset):
 
         return {
             # Model inputs
-            "input_ids":      enc_noisy.input_ids.squeeze(0),      # [max_length]
+            "input_ids": enc_noisy.input_ids.squeeze(0),  # [max_length]
             "attention_mask": enc_noisy.attention_mask.squeeze(0),  # [max_length]
-            "labels":         enc_clean.input_ids.squeeze(0),       # [max_length]
+            "labels": enc_clean.input_ids.squeeze(0),  # [max_length]
+
             # Vision placeholders
-            "soft_probs":     soft_probs,                           # [max_length, vocab]
-            "confidence":     confidence,                           # [max_length, 1]
-            # Raw strings — used by syllable loss and evaluation logging
-            "clean_text":     clean,
-            "noisy_text":     noisy_text,
-            # Akshara units — used by trainer for per-token syllable labels
-            "akshara_units":  units,
+            "soft_probs": soft_probs,  # [max_length, vocab]
+            "confidence": confidence,  # [max_length, 1]
         }

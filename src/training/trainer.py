@@ -228,7 +228,9 @@ class CAMETrainer:
             )
 
             # ── Syllable validity loss — per token ────────────────────────────
-            label_ids    = batch["labels"][0]                        # [seq_len]
+            #   Syllable validity loss — per token
+            # Flatten the entire batch of labels so we grade all 8 sentences at once!
+            label_ids = batch["labels"].view(-1)
             valid_labels = self._build_syllable_labels(
                 label_ids, device=self.accelerator.device
             )
