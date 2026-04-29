@@ -141,7 +141,13 @@ class BrahmiRestorationDataset(Dataset):
         del _model_for_tok   # free memory immediately
 
         # ── raw inscriptions ───────────────────────────────────────────────
-        txt_path = Path(f"data/processed/{split}.txt")
+        if split == "train":
+            # Point specifically to our massive new augmented dataset!
+            txt_path = Path("data/processed/train_augmented.txt")
+        else:
+            # Leave validation and testing files exactly as they were
+            txt_path = Path(f"data/processed/{split}.txt")
+
         with open(txt_path, "r", encoding="utf-8") as f:
             raw = [line.strip() for line in f if line.strip()]
 

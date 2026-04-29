@@ -1,7 +1,7 @@
 model:
   name: "google/byt5-small"
   hidden_dim: 768
-  max_length: 512
+  max_length: 128
   vocab_size: 384   # ByT5-small vocab (do not change)
 
 training:

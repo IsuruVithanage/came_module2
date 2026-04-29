@@ -26,7 +26,7 @@ class CAMETrainer:
         self.config["training"]["learning_rate"] = float(self.config["training"]["learning_rate"])
 
         # Define accumulation steps FIRST — scheduler calc uses it below
-        self.gradient_accumulation_steps = 8
+        self.gradient_accumulation_steps = 1
 
         print(f"✅ Config loaded | LR = {self.config['training']['learning_rate']} | "
               f"Batch=1 (accum={self.gradient_accumulation_steps})")
@@ -48,8 +48,9 @@ class CAMETrainer:
         self.train_dataset = BrahmiRestorationDataset(split="train")
         self.val_dataset   = BrahmiRestorationDataset(split="val")
 
+        # Use the batch size from your config file!
         self.train_loader = DataLoader(
-            self.train_dataset, batch_size=1, shuffle=True,  num_workers=0
+            self.train_dataset, batch_size=self.config["training"]["batch_size"], shuffle=True, num_workers=0
         )
         self.val_loader = DataLoader(
             self.val_dataset,   batch_size=1, shuffle=False, num_workers=0
