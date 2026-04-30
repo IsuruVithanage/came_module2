@@ -78,4 +78,6 @@ def evaluate_came(num_samples=20):
 
 
 if __name__ == "__main__":
-    evaluate_came(num_samples=20)
+    # 9999 is much larger than your test set, so your min() function
+    # will automatically restrict it to exactly 128 test items!
+    evaluate_came(num_samples=9999)
