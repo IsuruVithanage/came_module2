@@ -5,7 +5,8 @@ model:
   vocab_size: 384   # ByT5-small vocab (do not change)
 
 training:
-  batch_size: 8
+  batch_size: 16                     # Lower this from 8 to 4 (or even 2 if it still crashes)
+  gradient_accumulation_steps: 1    # Increase this to 2 (or 4 if batch_size is 2)
   epochs: 50
   learning_rate: 5e-4   # ← INCREASE THIS (was 5e-5)
   weight_decay: 0.01

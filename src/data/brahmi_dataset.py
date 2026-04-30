@@ -260,4 +260,8 @@ class BrahmiRestorationDataset(Dataset):
             # Vision placeholders
             "soft_probs": soft_probs,  # [max_length, vocab]
             "confidence": confidence,  # [max_length, 1]
+
+            # Safe strings for your evaluation script!
+            "clean_text": clean,
+            "noisy_text": noisy_text,
         }

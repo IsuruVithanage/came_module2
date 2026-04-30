@@ -25,8 +25,8 @@ class CAMETrainer:
             self.config = yaml.safe_load(f)
         self.config["training"]["learning_rate"] = float(self.config["training"]["learning_rate"])
 
-        # Define accumulation steps FIRST — scheduler calc uses it below
-        self.gradient_accumulation_steps = 1
+        # Read accumulation steps dynamically from your config file
+        self.gradient_accumulation_steps = self.config["training"].get("gradient_accumulation_steps", 2)
 
         print(f"✅ Config loaded | LR = {self.config['training']['learning_rate']} | "
               f"Batch=1 (accum={self.gradient_accumulation_steps})")
@@ -45,15 +45,17 @@ class CAMETrainer:
         self.tokenizer = self.model.tokenizer
 
         # ── Datasets & loaders ─────────────────────────────────────────────────
-        self.train_dataset = BrahmiRestorationDataset(split="train")
-        self.val_dataset   = BrahmiRestorationDataset(split="val")
+        # Force the dataset to use the 128 length from your yaml!
+        max_len = self.config["model"]["max_length"]
+        self.train_dataset = BrahmiRestorationDataset(split="train", max_length=max_len)
+        self.val_dataset = BrahmiRestorationDataset(split="val", max_length=max_len)
 
         # Use the batch size from your config file!
         self.train_loader = DataLoader(
-            self.train_dataset, batch_size=self.config["training"]["batch_size"], shuffle=True, num_workers=0
+            self.train_dataset, batch_size=self.config["training"]["batch_size"], shuffle=True, num_workers=2
         )
         self.val_loader = DataLoader(
-            self.val_dataset,   batch_size=1, shuffle=False, num_workers=0
+            self.val_dataset, batch_size=1, shuffle=False, num_workers=2
         )
 
         # ── Optimizer ──────────────────────────────────────────────────────────
@@ -284,6 +286,10 @@ class CAMETrainer:
             len(self.train_loader) // self.gradient_accumulation_steps, 1
         )
         print(f"✅ Epoch {epoch + 1} finished — Avg Loss: {avg_loss:.4f}")
+        # Calculate the average loss for this entire epoch
+        avg_loss = total_loss / len(self.train_loader)
+
+        # Return it so the main loop can check it
         return avg_loss
 
     def save_checkpoint(self):
@@ -295,19 +301,28 @@ class CAMETrainer:
 if __name__ == "__main__":
     import argparse
 
-    # 1. Set up the listener for the epoch argument
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=50, help="Number of epochs to train")
+    parser.add_argument("--epochs", type=int, default=50, help="Maximum number of epochs to train")
+    # NEW: Add a listener for the target loss
+    parser.add_argument("--target_loss", type=float, default=0.0, help="Stop training if loss drops below this")
     args = parser.parse_args()
 
     trainer = CAMETrainer()
 
-    # 2. Use the dynamic argument instead of the hardcoded 50
     for epoch in range(args.epochs):
-        trainer.train_epoch(epoch)
+        # 1. Run the epoch and catch the average loss it returns
+        avg_loss = trainer.train_epoch(epoch)
+
+        # 2. Save checkpoints regularly
         if epoch % 5 == 0:
             trainer.save_checkpoint()
 
-    # Save one final time when the loop finishes!
+        # 3. THE KILL SWITCH: Check if we hit our goal!
+        if args.target_loss > 0.0 and avg_loss <= args.target_loss:
+            print(f"\n🎯 TARGET REACHED! Loss dropped to {avg_loss:.4f} (Goal: {args.target_loss}).")
+            print(f"🛑 Stopping training early at Epoch {epoch + 1} to save time/compute!")
+            break  # This instantly breaks out of the loop!
+
+    # Save one final pristine checkpoint when it finishes or stops early
     trainer.save_checkpoint()
-    print(f"🎉 Training finished after {args.epochs} epochs!")
+    print(f"🎉 Training session complete!")
